@@ -29,24 +29,53 @@ static boolean hostConnected = false;
 
 // ==================== CUSTOMIZE HERE ====================
 #define WLEDSERIAL Serial1 // Serial port for WLED
-std::vector<PianoLedStrip> strips = {
-    PianoLedStrip(
-        74,                                              // ledsPerSegment, segments in a strip must be of equal length
-        2,                                               // segmentCount
-        60,                                              // ledsPerMeter of the strip
-        0,                                               // wledSegmentOffset - offset for the segment in WLED
-        1.68,                                            // stripToPianoLengthScale - scale factor for the strip to match the piano length
-        PianoLedStrip::SegmentConnectionMethod::Parallel // segmentConnectionMethod - how the segments are connected
-        )};
 
-PianoToWled::LedStripColorLayout colorLayout = PianoToWled::LedStripColorLayout::VelocityBased; // Color layout strategy: VelocityBased or NoteBased
-std::vector<LedColor> colorPalette = {LedColor::Blue, LedColor::Red};                           // Color palette for the gradient mapping
-std::function<double(double)> colorCurve = GradientColorMapping::Linear;                        // Color curve function for mapping velocity/note to color. See GradientColorMapping.h for available functions.
-LedColor noteOffColor = LedColor(255, 255, 255);                                                // Color for note off event
-int noteOffColorBrightness = 8;                                                                 // Brightness for note off color
-std::vector<uint8_t> midiChannelsToListen = {1, 2};                                             // MIDI channels to listen to. Use allChannels to listen to all channels. The Yamaha NU1X for example uses channels 1 and 2 for the piano keys.
-PianoToWled pianoToWled(strips);
+// "strips" is a vector - you can have multiple LED strips connected to your ESP32. 
+// For each strip connected, add a new entry to this vector
+std::vector<PianoLedStrip> strips = {                   
+    PianoLedStrip(
+        // ledsPerSegment: this is important for segmentConnectionMethod below. Every segment of your strip must be of equal length
+        74,          
+        // segmentCount: also important for segmentConnectionMethod below 
+        2,              
+        // ledsPerMeter of the entire strip                                 
+        60,                                   
+        // wledSegmentOffset - offset for the segment in WLED           
+        0,            
+        // stripToPianoLengthScale - this is important: scale factor for the strip to match the piano length. You need to play around with this value until the addressed LEDs match the height of the played piano keys. For me, 1.68 works well                                   
+        1.68,                                            
+        // segmentConnectionMethod - how the segments are connected - see picture below
+        // Possible values are Parallal, Serial (if the strip is not stacked on top of each other) or None (if you done use multiple segments for the strip)
+        PianoLedStrip::SegmentConnectionMethod::Parallel 
+    )
+};
+
+// Color palette for the gradient mapping 
+std::vector<LedColor> colorPalette = {LedColor::Blue, LedColor::Red};
+
+// Color layout strategy: VelocityBased or NoteBased.
+// Velocity Based -> the quieter the note, the closer to the first color of the color palette we get
+// Note Based -> the lower the note, the closer to the first color of the color palette we get
+PianoToWled::LedStripColorLayout colorLayout = PianoToWled::LedStripColorLayout::VelocityBased;
+
+// Color curve function for mapping velocity/note to color. See gradientcolormapping.h for available functions.
+std::function<double(double)> colorCurve = GradientColorMapping::Linear;
+
+// Color for note off event
+LedColor noteOffColor = LedColor(255, 255, 255);                                                
+
+// Brightness for note off color
+int noteOffColorBrightness = 8; 
+
+// MIDI channels to listen to. Use "allChannels" to listen to all channels. My piano (The Yamaha NU1X) for example uses channels 1 and 2 for the piano keys.
+std::vector<uint8_t> midiChannelsToListen = {1, 2};
+
+// Here, you can optionally add which note is the lowest note of your piano. This is used to calculate the offset for the LED strip.
+// The default is A0, which is the lowest note of a piano. If you want to use a different note, you can do so here.
+std::string lowestKey = "A0"; // Lowest note of the piano
 // ========================================================
+
+PianoToWled pianoToWled(strips, lowestKey);
 
 struct WledMidiCallbacks : FineGrainedMIDI_Callbacks<WledMidiCallbacks>
 {
