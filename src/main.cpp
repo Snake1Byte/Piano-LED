@@ -65,7 +65,7 @@ std::function<double(double)> colorCurve = GradientColorMapping::Linear;
 LedColor noteOffColor = LedColor(255, 255, 255);                                                
 
 // Brightness for note off color
-int noteOffColorBrightness = 8; 
+int noteOffColorBrightness = 6; 
 
 // MIDI channels to listen to. Use "allChannels" to listen to all channels. My piano (The Yamaha NU1X) for example uses channels 1 and 2 for the piano keys.
 std::vector<uint8_t> midiChannelsToListen = {1, 2};
@@ -81,6 +81,12 @@ struct WledMidiCallbacks : FineGrainedMIDI_Callbacks<WledMidiCallbacks>
 {
     void onNoteOn(Channel channel, uint8_t note, uint8_t velocity, Cable cable)
     {
+        if (velocity == 0)
+        {
+            onNoteOff(channel, note, 0, cable);
+            return;
+        }
+
         if (!VerifyChannel(&channel))
         {
             return;
@@ -131,6 +137,7 @@ struct WledMidiCallbacks : FineGrainedMIDI_Callbacks<WledMidiCallbacks>
 
 } callbacks;
 
+
 void setup()
 {
     // Wait 1.5 seconds before turning on USB Host. If connected USB devices
@@ -154,7 +161,11 @@ void setup()
     pianoToWled.noteOffColor = noteOffColor;
     pianoToWled.noteOffColorBrightness = noteOffColorBrightness;
 
-    InitializeWled();
+    // Turn off WLED in case it's on without a host connected
+    if (!hostmidi.backend.backend) {
+        delay(3000);
+        Serial1.println("{on:false}");
+    }
 }
 
 void loop()
@@ -192,8 +203,8 @@ void InitializeWled()
         {
             for (int j = 0; j < strip.ledsPerSegment; ++j)
             {
-                ChangeIndividualLedColors({NeoPixelColor(j, i, noteOffColor, noteOffColorBrightness)});
-                delay(20);
+                ChangeIndividualLedColors({NeoPixelColor(j, i + strip.wledSegmentOffset, noteOffColor, noteOffColorBrightness)});
+                delay(15);
             }
         }
     }
@@ -201,7 +212,6 @@ void InitializeWled()
 
 void ShutdownWled()
 {
-    Serial1.println("{on:true,bri:128}");
     for (auto &strip : strips)
     {
         for (int i = 0; i < strip.segmentCount; ++i)
@@ -216,8 +226,8 @@ void ShutdownWled()
         {
             for (int j = 0; j < strip.ledsPerSegment; ++j)
             {
-                ChangeIndividualLedColors({NeoPixelColor(j, i, LedColor(0, 0, 0), 0)});
-                delay(20);
+                ChangeIndividualLedColors({NeoPixelColor(j, i + strip.wledSegmentOffset, LedColor(0, 0, 0), 0)});
+                delay(15);
             }
         }
     }
