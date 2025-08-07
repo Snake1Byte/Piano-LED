@@ -4,9 +4,10 @@
 #include <unordered_map>
 #include "NeoPixelColor.h"
 
-class PianoLedStrip {
-public:
-    enum class SegmentConnectionMethod {
+struct PianoLedStrip
+{
+    enum class SegmentConnectionMethod
+    {
         None,
         Serial,
         Parallel
@@ -19,23 +20,10 @@ public:
     /**
      * Scale factor for the strip to match the paino length.
      */
-    double stripToPianoLengthScale; 
+    double stripToPianoLengthScale;
     SegmentConnectionMethod segmentConnectionMethod;
 
     std::unordered_map<NeoPixelColor, int> litLedsTable;
-
-    PianoLedStrip(int ledsPerSegment,
-                  int segmentCount,
-                  double ledsPerMeter,
-                  int wledSegmentOffset,
-                  double stripToPianoLengthScale,
-                  SegmentConnectionMethod segmentConnectionMethod)
-        : ledsPerSegment(ledsPerSegment),
-          segmentCount(segmentCount),
-          ledsPerMeter(ledsPerMeter),
-          wledSegmentOffset(wledSegmentOffset),
-          stripToPianoLengthScale(stripToPianoLengthScale),
-          segmentConnectionMethod(segmentConnectionMethod) {}
 };
 
 #endif // PIANO_LED_STRIP_H

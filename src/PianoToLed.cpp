@@ -1,17 +1,17 @@
 #include <Arduino.h>
-#include "PianoToWled.h"
+#include "PianoToLed.h"
 #include "NoteEvent.h"
 #include <regex>
 #include <functional>
 
-std::vector<NeoPixelColor> PianoToWled::HandleNoteOn(uint8_t note, uint8_t velocity)
+std::vector<NeoPixelColor> PianoToLed::HandleNoteOn(uint8_t note, uint8_t velocity)
 {
     std::vector<NeoPixelColor> neoPixelColors;
 
     NoteEvent noteEvent(note, velocity, NoteEvent::MidiCommandCode::NoteOn);
-    for (auto &strip : strips)
+    for (auto &strip : config.strips)
     {
-        NeoPixelColor neoPixelColor = KeyboardKeyToLed(noteEvent, strip, colorLayout);
+        NeoPixelColor neoPixelColor = KeyboardKeyToLed(noteEvent, strip);
 
         strip.litLedsTable[neoPixelColor]++;
 
@@ -26,14 +26,14 @@ std::vector<NeoPixelColor> PianoToWled::HandleNoteOn(uint8_t note, uint8_t veloc
     return neoPixelColors;
 }
 
-std::vector<NeoPixelColor> PianoToWled::HandleNoteOff(uint8_t note, uint8_t velocity)
+std::vector<NeoPixelColor> PianoToLed::HandleNoteOff(uint8_t note, uint8_t velocity)
 {
     std::vector<NeoPixelColor> neoPixelColors;
 
     NoteEvent noteEvent(note, velocity, NoteEvent::MidiCommandCode::NoteOff);
-    for (auto &strip : strips)
+    for (auto &strip : config.strips)
     {
-        NeoPixelColor neoPixelColor = KeyboardKeyToLed(noteEvent, strip, colorLayout);
+        NeoPixelColor neoPixelColor = KeyboardKeyToLed(noteEvent, strip);
 
         strip.litLedsTable[neoPixelColor]--;
 
@@ -48,7 +48,7 @@ std::vector<NeoPixelColor> PianoToWled::HandleNoteOff(uint8_t note, uint8_t velo
     return neoPixelColors;
 }
 
-NeoPixelColor PianoToWled::KeyboardKeyToLed(const NoteEvent &noteEvent, PianoLedStrip &strip, LedStripColorLayout layout)
+NeoPixelColor PianoToLed::KeyboardKeyToLed(const NoteEvent &noteEvent, PianoLedStrip &strip)
 {
     int led = static_cast<int>(std::round((noteEvent.noteNumber - lowestKeyOffset) * strip.stripToPianoLengthScale));
     int finalLed = led;
@@ -69,28 +69,28 @@ NeoPixelColor PianoToWled::KeyboardKeyToLed(const NoteEvent &noteEvent, PianoLed
         break;
     }
 
-    if (noteEvent.commandCode == NoteEvent::MidiCommandCode::NoteOff)
+    if (noteEvent.commandCode == NoteEvent::MidiCommandCode::NoteOff || noteEvent.velocity == 0)
     {
-        return NeoPixelColor(finalLed, segmentNumber, noteOffColor, noteOffColorBrightness);
+        return NeoPixelColor(finalLed, segmentNumber, config.noteOffColor, config.noteOffColorBrightness);
     }
 
     LedColor color(0, 0, 0);
-    switch (layout)
+    switch (config.colorLayout)
     {
-    case LedStripColorLayout::VelocityBased:
-        color = GradientColorMapping::Map(noteEvent.velocity, 128, colorCurve, colorPalette);
+    case PianoLedConfig::LedStripColorLayout::VelocityBased:
+        color = GradientColorMapping::Map(noteEvent.velocity, 128, config.colorCurve, config.colorPalette);
         break;
-    case LedStripColorLayout::NoteBased:
+    case PianoLedConfig::LedStripColorLayout::NoteBased:
         int parallelConnectionMethodMult = strip.segmentConnectionMethod == PianoLedStrip::SegmentConnectionMethod::Parallel ? strip.segmentCount : 1;
         double finalLedsPerMeter = strip.ledsPerMeter * parallelConnectionMethodMult;
-        color = GradientColorMapping::Map(led, finalLedsPerMeter, colorCurve, colorPalette);
+        color = GradientColorMapping::Map(led, finalLedsPerMeter, config.colorCurve, config.colorPalette);
         break;
     }
 
     return NeoPixelColor(finalLed, segmentNumber, color, 255);
 }
 
-int PianoToWled::NoteToMidi(const std::string &note)
+int PianoToLed::NoteToMidi(const std::string &note)
 {
     static const std::unordered_map<std::string, int> noteOffsets = {
         {"C", 0}, {"C#", 1}, {"D", 2}, {"D#", 3}, {"E", 4}, {"F", 5}, {"F#", 6}, {"G", 7}, {"G#", 8}, {"A", 9}, {"A#", 10}, {"B", 11}};
