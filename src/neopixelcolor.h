@@ -7,14 +7,14 @@
 #include "LedColor.h"
 
 struct NeoPixelColor {
+    int stripNumber; // The strip number this LED belongs to
     int ledNumber;
-    int segmentNumber;
     std::string hexColor;
     LedColor ledColor;
     int brightness;
 
-    NeoPixelColor(int ledNumber, int segmentNumber, const LedColor& ledColor, int brightness = 128)
-        : ledNumber(ledNumber), segmentNumber(segmentNumber), ledColor(ledColor), brightness(brightness) {
+    NeoPixelColor(int stripNumber, int ledNumber, const LedColor& ledColor, int brightness = 128)
+        : stripNumber(stripNumber), ledNumber(ledNumber), ledColor(ledColor), brightness(brightness) {
           std::stringstream ss;
           ss << std::setw(2) << std::setfill('0') << std::hex << ledColor.r
             << std::setw(2) << std::setfill('0') << std::hex << ledColor.g
@@ -24,7 +24,7 @@ struct NeoPixelColor {
 
     // Equality comparison
     bool operator==(const NeoPixelColor& other) const {
-        return ledNumber == other.ledNumber && segmentNumber == other.segmentNumber;
+        return ledNumber == other.ledNumber && stripNumber == other.stripNumber;
     }
 };
 
@@ -33,7 +33,7 @@ namespace std {
     template <>
     struct hash<NeoPixelColor> {
         std::size_t operator()(const NeoPixelColor& color) const {
-            return (std::hash<int>()(color.ledNumber) << 1) ^ std::hash<int>()(color.segmentNumber);
+            return (std::hash<int>()(color.ledNumber) << 1) ^ std::hash<int>()(color.stripNumber);
         }
     };
 }

@@ -12,12 +12,12 @@
 #include "NoteEvent.h"
 #include "PianoLedConfig.h"
 
-class PianoToLed
+class KeyboardKeyToLed
 {
 public:
-    PianoToLed()
+    KeyboardKeyToLed()
     {
-        lowestKeyOffset = NoteToMidi(config.lowestKey);
+        lowestKeyOffset = PianoLedConfig::NoteToMidi(PianoLedConfig::globalConfig.lowestKey);
     }
 
     std::vector<NeoPixelColor> HandleNoteOn(uint8_t note, uint8_t velocity);
@@ -26,8 +26,7 @@ public:
 private:
     int lowestKeyOffset;
 
-    NeoPixelColor KeyboardKeyToLed(const NoteEvent &noteEvent, PianoLedStrip &strip);
-    int NoteToMidi(const std::string &note);
+    NeoPixelColor Handle(const NoteEvent &noteEvent, PianoLedStrip &strip);
 };
 
 #endif

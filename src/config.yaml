@@ -1,0 +1,27 @@
+strips:
+  - ledPin: 2
+    totalLeds: 148
+    ledsPerMeter: 60
+    stripToPianoLengthScale: 1.68
+    stripOrientation: StackedLeftToRight  # LeftToRight | RightToLeft | StackedLeftToRight | StackedRightToLeft
+
+# At least two colors for the gradient palette
+colorPalette:
+  - { r: 0,   g: 0,   b: 255 }  # Blue
+  - { r: 255, g: 0,   b: 0   }  # Red
+
+# How to map values onto the gradient: VelocityBased | NoteBased
+colorLayout: VelocityBased
+
+# Gradient curve name (from your GradientColorMapping); "Linear" in your example
+colorCurve: Linear
+
+# Color for note-off + its brightness (0–255)
+noteOffColor: { r: 255, g: 255, b: 255 }
+noteOffColorBrightness: 6
+
+# MIDI channels to listen to (1–16). Use one or many.
+midiChannelsToListen: [1, 2]
+
+# Lowest key of the piano (affects LED offset)
+lowestKey: "A0"

@@ -1,112 +1,78 @@
 #include <Arduino.h>
 #include "FastLedController.h"
-#include <FastLED.h>
 #include "PianoLedConfig.h"
+
+void FastLedController::InitializeFastLed()
+{
+    size_t numStrips = PianoLedConfig::globalConfig.strips.size();
+    strips.resize(numStrips);
+    delay(1000); // power-up safety delay
+    for (size_t i = 0; i < numStrips; ++i)
+    {
+        strips[i].resize(PianoLedConfig::globalConfig.strips[i].totalLeds);
+        switch (PianoLedConfig::globalConfig.strips[i].ledPin)
+        {
+        case 2:
+            FastLED.addLeds<WS2812B, 2, GRB>(strips[i].data(), PianoLedConfig::globalConfig.strips[i].totalLeds);
+            break;
+        case 3:
+            FastLED.addLeds<WS2812B, 3, GRB>(strips[i].data(), PianoLedConfig::globalConfig.strips[i].totalLeds);
+            break;
+        case 4:
+            FastLED.addLeds<WS2812B, 4, GRB>(strips[i].data(), PianoLedConfig::globalConfig.strips[i].totalLeds);
+            break;
+        case 5:
+            FastLED.addLeds<WS2812B, 5, GRB>(strips[i].data(), PianoLedConfig::globalConfig.strips[i].totalLeds);
+            break;
+        case 6:
+            FastLED.addLeds<WS2812B, 6, GRB>(strips[i].data(), PianoLedConfig::globalConfig.strips[i].totalLeds);
+        }
+    }
+}
 
 void FastLedController::InitializeLeds()
 {
-    for (auto &strip : config.strips)
+    for (size_t stripNumber = 0; stripNumber < PianoLedConfig::globalConfig.strips.size(); ++stripNumber)
     {
-        for (int i = 0; i < strip.segmentCount; ++i)
+        for (int i = 0; i < PianoLedConfig::globalConfig.strips[stripNumber].totalLeds; ++i)
         {
-            BulkChangeLedColors(0, strip.ledsPerSegment, i + strip.wledSegmentOffset, LedColor(0, 0, 0), 0);
-        }
-    }
-
-    for (auto &strip : config.strips)
-    {
-        for (int i = 0; i < strip.segmentCount; ++i)
-        {
-            for (int j = 0; j < strip.ledsPerSegment; ++j)
-            {
-                ChangeIndividualLedColors({NeoPixelColor(j, i + strip.wledSegmentOffset, config.noteOffColor, config.noteOffColorBrightness)});
-                delay(10);
-            }
+            ChangeIndividualLedColors({NeoPixelColor(stripNumber, i, PianoLedConfig::globalConfig.noteOffColor, PianoLedConfig::globalConfig.noteOffColorBrightness)});
+            delay(10);
         }
     }
 }
 
 void FastLedController::ShutdownLeds()
 {
-    for (auto &strip : config.strips)
+    for (size_t stripNumber = 0; stripNumber < PianoLedConfig::globalConfig.strips.size(); ++stripNumber)
     {
-        strip.litLedsTable.clear();
-
-        for (int i = 0; i < strip.segmentCount; ++i)
+        for (int i = 0; i < PianoLedConfig::globalConfig.strips[stripNumber].totalLeds; ++i)
         {
-            BulkChangeLedColors(0, strip.ledsPerSegment, i + strip.wledSegmentOffset, config.noteOffColor, config.noteOffColorBrightness);
-        }
-    }
-
-    for (auto &strip : config.strips)
-    {
-        for (int i = 0; i < strip.segmentCount; ++i)
-        {
-            for (int j = 0; j < strip.ledsPerSegment; ++j)
-            {
-                ChangeIndividualLedColors({NeoPixelColor(j, i + strip.wledSegmentOffset, LedColor(0, 0, 0), 0)});
-                delay(10);
-            }
+            ChangeIndividualLedColors({NeoPixelColor(stripNumber, i, LedColor(0, 0, 0), 0)});
+            delay(10);
         }
     }
 }
 
 void FastLedController::ChangeIndividualLedColors(const std::vector<NeoPixelColor> &colorsPerPixel)
 {
-    // for (const auto &color : colorsPerPixel)
-    // {
-    //     JsonObject segment = seg.add<JsonObject>();
-    //     segment["id"] = color.segmentNumber;
-
-    //     JsonArray i = segment["i"].to<JsonArray>();
-    //     i.add(color.ledNumber);
-    //     i.add(color.hexColor);
-
-    //     segment["bri"] = color.brightness;
-    // }
-
-    // String json;
-    // serializeJson(doc, json);
-    // // Serial.println(json);
-    // Serial1.println(json);
-}
-
-void FastLedController::BulkChangeLedColors(int startLed, int endLed, int segmentNumber, const LedColor &color, int brightness)
-{
-    // JsonDocument doc;
-
-    // JsonArray seg = doc["seg"].to<JsonArray>();
-
-    // JsonObject segment = seg.add<JsonObject>();
-    // segment["id"] = segmentNumber;
-
-    // JsonArray i = segment["i"].to<JsonArray>();
-    // i.add(startLed);
-    // i.add(endLed);
-    // JsonArray colorArray = i.add<JsonArray>();
-
-    // colorArray.add(color.r);
-    // colorArray.add(color.g);
-    // colorArray.add(color.b);
-
-    // segment["bri"] = brightness;
-
-    // String json;
-    // serializeJson(doc, json);
-    // // Serial.println(json);
-    // Serial1.println(json);
-}
-
-void FastLedController::InitializeFastLed()
-{
-    int totalLeds = 0;
-    for (const auto &strip : config.strips)
+    for (auto &color : colorsPerPixel)
     {
-        totalLeds += strip.ledsPerSegment * strip.segmentCount;
+        CRGB ledColor(color.ledColor.r, color.ledColor.g, color.ledColor.b);
+        ledColor.nscale8_video(color.brightness);
+        strips[color.stripNumber][color.ledNumber] = ledColor;
     }
+    FastLED.show();
+}
 
-    leds = new CRGB[totalLeds];
+void FastLedController::BulkChangeLedColors(int startLed, int endLed, int stripNumber, const LedColor &color, int brightness)
+{
+    CRGB ledColor(color.r, color.g, color.b);
+    ledColor.nscale8_video(brightness);
 
-    delay(3000); // power-up safety delay
-    FastLED.addLeds<WS2812B, GRB>(leds, totalLeds, (uint8_t)ledPin).setCorrection(TypicalLEDStrip);
+    for (int i = startLed; i < endLed; ++i)
+    {
+        strips[stripNumber][i] = ledColor;
+    }
+    FastLED.show();
 }
