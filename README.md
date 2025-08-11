@@ -2,6 +2,8 @@
 
 This project is designed to interface a MIDI keyboard or controller connected to a Teensy 4.1 via USB Host with an ESP32 running a webserver for configuration. It maps MIDI note events to LED colors on a NeoPixel (WS2812B) LED strip mounted above the piano's keyboard.
 
+[The webserver project is located here](https://github.com/Snake1Byte/Piano-LED-Configurator).
+
 ## Features
 - **MIDI Input via USB Host**: Supports MIDI devices connected to the Teensy 4.1's USB host port.
 - **Webserver for configuration**: Communicates with an ESP32 running a webserver to configure the program.
