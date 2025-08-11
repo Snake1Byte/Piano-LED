@@ -1,19 +1,21 @@
-# Teensy USB Host MIDI to WLED Controller
+# Piano WLED
 
-This project is designed to interface a MIDI keyboard or controller connected to a Teensy 4.1 via USB Host with an ESP32 running WLED. It maps MIDI note events to LED colors on a NeoPixel LED strip, creating a visually dynamic lighting effect based on MIDI input.
+This project is designed to interface a MIDI keyboard or controller connected to a Teensy 4.1 via USB Host with an ESP32 running a webserver for configuration. It maps MIDI note events to LED colors on a NeoPixel (WS2812B) LED strip mounted above the piano's keyboard.
+
+[The webserver project is located here](https://github.com/Snake1Byte/Piano-LED-Configurator).
 
 ## Features
 - **MIDI Input via USB Host**: Supports MIDI devices connected to the Teensy 4.1's USB host port.
-- **WLED Integration**: Communicates with an ESP32 running WLED to control NeoPixel LED strips.
-- **Customizable LED Mapping**: Configure LED colors, brightness, and mapping strategies (e.g., velocity-based or note-based).
+- **Webserver for configuration**: Communicates with an ESP32 running a webserver to configure the program.
+- **Customizable LED Mapping**: Configure LED colors, brightness, and mapping strategies (e.g., velocity-based or note-based), etc.
 - **MIDI Channel Filtering**: Specify which MIDI channels to listen to.
 
 ## Requirements
 ### Hardware
 1. **Teensy 4.1**: A powerful microcontroller with USB host capabilities.
 2. **USB Host Cable**: Available from the [PJRC store](https://www.pjrc.com/store/cable_usb_host_t36.html).
-3. **ESP32**: Running WLED (do not use experimental ESP32 variants like the ESP32-C3, see https://kno.wled.ge/basics/compatible-controllers/).
-4. **NeoPixel LED Strip like WS2812**: Compatible with WLED for lighting effects.
+3. **ESP32**: Running a webserver to configure the program.
+4. **NeoPixel LED Strip like WS2812**: Compatible with the FastLED library for lighting effects.
 
 ### Software
 1. **PlatformIO**: Used for compiling and uploading the code to the Teensy 4.1.
@@ -33,92 +35,56 @@ lib/
 ### 3. Hardware Connections
 - Connect the USB host cable to the Teensy 4.1's USB host port (see https://www.pjrc.com/store/cable_usb_host_t36.html).
 - Connect your MIDI keyboard or controller to the USB host cable.
-- Connect the ESP32 running WLED to the Teensy 4.1 via a serial connection (RX & TX pins, default is `Serial1` on the Teensy's side).
-- Connect the NeoPixel LED strip to the ESP32 as per the WLED documentation.
+- Connect the ESP32 to the Teensy 4.1 via a Serial connection. The Teensy 4.1 is connected via Serial1 and the ESP32 via HardwareSerial on GPIO pins 17 for TX and 16 for RX.
+- Connect the NeoPixel LED strip to the Teensy's pin number 2. This can be changed in the configuration.
 
-### 4. Configure WLED
-- Flash WLED onto the ESP32 using the [WLED installation guide](https://kno.wled.ge/).
-- The Teensy will send JSON API commands over the Serial pins (RX & TX). This seems to be broken on experimentally supported ESP32s, like the ESP32-C3. **Do not use that kind of ESP32.** Again, see https://kno.wled.ge/basics/compatible-controllers/.
-
-### 5. Compile and Upload the Code
+### 4. Compile and Upload the Code
 - Open the project in PlatformIO.
 - Select the Teensy 4.1 as the target board.
-- Compile and upload the code to the Teensy 4.1.
+- Compile and upload "Piano LED" to the Teensy 4.1.
+- Select the ESP32 as the target board.
+- Compile and upload "Piano LED Configurator" to the ESP32.
 
-### 6. Customize the Configuration
-- Modify the customizable section in `main.cpp` to adjust LED strip settings, color palettes, and MIDI channels. 
+### 5. Customize the Configuration
+- Connect to the WiFi access point your ESP32 has created (SSID: "PianoConfigAP", Password: "pianopass").
+- Go to the ESP32's webserver's homepage using the ESP32's IP address (likely http://192.168.4.1/) in a web browser and enter your WiFi credentials on thet page.
+- Reconnect to your home WiFi.
+- Find out what your ESP32's IP address on your home network is. You will likely have to consult your internet modem's settings.
+- Open the ESP32's webserver in a web browser using its new IP address (e.g. http://192.168.0.100/) to configure the Piano LED program.
 
-Example configuration (with image below):
-```cpp
-#define WLEDSERIAL Serial1 // Serial port for WLED
 
-// "strips" is a vector - you can have multiple LED strips connected to your ESP32. 
-// For each strip connected, add a new entry to this vector
-std::vector<PianoLedStrip> strips = {                   
-    PianoLedStrip(
-        // ledsPerSegment: this is important for segmentConnectionMethod below. Every segment of your strip must be of equal length
-        74,          
-        // segmentCount: also important for segmentConnectionMethod below 
-        2,              
-        // ledsPerMeter of the entire strip                                 
-        60,                                   
-        // wledSegmentOffset - offset for the segment in WLED           
-        0,            
-        // stripToPianoLengthScale - this is important: scale factor for the strip to match the piano length. You need to play around with this value until the addressed LEDs match the height of the played piano keys. For me, 1.68 works well                                   
-        1.68,                                            
-        // segmentConnectionMethod - how the segments are connected - see picture below
-        // Possible values are Parallal, Serial (if the strip is not stacked on top of each other) or None (if you done use multiple segments for the strip)
-        PianoLedStrip::SegmentConnectionMethod::Parallel 
-    )
-};
+## Example Configuration
+This is what the configration page running on the connected ESP32 looks like:
+![Example Configuration](./images/webserver_example.png "Example Configuration")
 
-// Color palette for the gradient mapping 
-std::vector<LedColor> colorPalette = {LedColor::Blue, LedColor::Red};
+- ledPin: Which pin of the Teensy 4.1 is the LED strip connected to?
+- totalLeds: How many LEDs are there in totel on the LED strip?
+- ledsPerMeter: How many LEDs are there per meter on the LED strip?
+- stripToPianoLengthScale: scale factor for the strip to match the piano length. You need to play around with this value until the addressed LEDs match the height of the played piano key. For me, 1.68 works well.
+- stripOrientation: How is the LED strip connected to the piano? LeftToRight, RightToLeft, StackedLeftToRight, StackedRightToLeft (see image below for illustration of StackedLeftToRight). Warning: StackedRightToLeft is not yet implemented.
+- colorPalette: Color palette for the gradient mapping (see colorLayout). You can add as many colors as you like.
+- colorLayout: VelocityBased or NoteBased. Velocity Based -> the quieter the note, the closer to the first color of the color palette we get. Note Based -> the lower the note, the closer to the first color of the color palette we get.
+- noteOffColor: Color for note off event / when a key isn't played.
+- noteOffColorBrightness: Brightness for note off color / when a key isn't played.
+- midiChannelsToListen: Comma seperated list of MIDI channels to listen to.
+- lowestKey: The lowest note of your piano. This is used to calculate the offset for the LED strip. The default is A0, which is the lowest note of a piano. If you want to use a different note, you can do so here (valid inputs are letters A-G followed by an optional #, ♯, b or ♭ followed by a number, with lowest key of the piano being A0).
 
-// Color layout strategy: VelocityBased or NoteBased.
-// Velocity Based -> the quieter the note, the closer to the first color of the color palette we get
-// Note Based -> the lower the note, the closer to the first color of the color palette we get
-PianoToWled::LedStripColorLayout colorLayout = PianoToWled::LedStripColorLayout::VelocityBased;
-
-// Color curve function for mapping velocity/note to color. See gradientcolormapping.h for available functions.
-std::function<double(double)> colorCurve = GradientColorMapping::Linear;
-
-// Color for note off event
-LedColor noteOffColor = LedColor(255, 255, 255);                                                
-
-// Brightness for note off color
-int noteOffColorBrightness = 8; 
-
-// MIDI channels to listen to. Use "allChannels" to listen to all channels. My piano (The Yamaha NU1X) for example uses channels 1 and 2 for the piano keys.
-std::vector<uint8_t> midiChannelsToListen = {1, 2};                                 
-
-// Here, you can optionally add which note is the lowest note of your piano. This is used to calculate the offset for the LED strip.
-// The default is A0, which is the lowest note of a piano. If you want to use a different note, you can do so here.
-std::string lowestKey = "A0"; // Lowest note of the piano
-```
-
-#### Example Usage:
+### stripOrientation "StackedLeftToRight" Example Usage:
 ![Example Usage](./images/piano_example.jpg "Example Usage")
 
-## Usage
-1. Power on the Teensy 4.1 and ESP32.
-2. Connect a MIDI keyboard or controller to the USB host port of the Teensy.
-3. Play notes on the MIDI device to see the corresponding LED effects on the NeoPixel strip.
-
-![Microcontroller Usage](./images/microcontroller_example.jpg "Microcontroller Usage")
+## Wiring
+![Wiring](./images/wiring.png "Wiring")
 
 
 ## Notes
-- Ensure the Teensy 4.1 and the ESP32, as well as the LED strips are powered adequately, see https://kno.wled.ge/advanced/wiring/
-- The project is designed for use with standard ESP32 boards running WLED. Experimental ESP32 variants like the ESP32-C3 do not work due to a bug in WLED causing the ESP32-C3 not to react to any Serial messages.
-
-## Troubleshooting
-- If the LEDs do not respond, check the serial connection between the Teensy and ESP32.
-- Ensure the MIDI device is recognized by the Teensy. You can add debug messages in the `loop()` function to verify device connection status.
+- Ensure the Teensy 4.1 and the ESP32, as well as the LED strips are powered adequately. A 5V PSU with at least 2A is recommended.
 
 ## Dependencies
 
 This project uses the following open source libraries:
 
 - [Control Surface](https://github.com/tttapa/Control-Surface) - Licensed under **GPL-3.0**
-- [ArduinoJson](https://arduinojson.org/) - Licensed under **MIT**
+
+# TODO
+- Add support for StackedRightToLeft
+- Add support for changing the colorCurve (Linear by default)

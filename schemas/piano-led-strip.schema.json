@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/piano-led-strip.schema.json",
+  "title": "PianoLedStrip",
+  "description": "One physical LED strip connected to a Teensy 4.1.",
+  "type": "object",
+  "additionalProperties": false,
+
+  "required": [
+    "ledPin",
+    "totalLeds",
+    "ledsPerMeter",
+    "stripToPianoLengthScale",
+    "stripOrientation"
+  ],
+
+  "properties": {
+    "ledPin": {
+      "type": "integer",
+      "enum": [2, 3, 4, 5, 6],
+      "description": "Teensy 4.1 data pin the strip is connected to (2–6)."
+    },
+
+    "totalLeds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Total number of LEDs on this strip."
+    },
+
+    "ledsPerMeter": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "LED density (LEDs per meter)."
+    },
+
+    "stripToPianoLengthScale": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Scale to match strip length to piano length (e.g., 1.68)."
+    },
+
+    "stripOrientation": {
+      "description": "LED addressing direction/orientation relative to the keyboard.",
+      "oneOf": [
+        {
+          "const": "LeftToRight",
+          "description": "Index 0 is leftmost; N-1 is rightmost."
+        },
+        {
+          "const": "RightToLeft",
+          "description": "Index 0 is rightmost; N-1 is leftmost."
+        },
+        {
+          "const": "StackedLeftToRight",
+          "description": "Two stacked rows, L→R on the first, then R→L (middle index (N-1)/2 is rightmost)."
+        },
+        {
+          "const": "StackedRightToLeft",
+          "description": "Two stacked rows, R→L on the first, then L→R (middle index (N-1)/2 is leftmost)."
+        }
+      ]
+    }
+  },
+
+  "examples": [
+    {
+      "ledPin": 2,
+      "totalLeds": 148,
+      "ledsPerMeter": 60,
+      "stripToPianoLengthScale": 1.68,
+      "stripOrientation": "StackedLeftToRight"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/piano-led-config.schema.json",
+  "title": "PianoLedConfig",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "strips",
+    "colorPalette",
+    "colorLayout",
+    "colorCurve",
+    "noteOffColor",
+    "noteOffColorBrightness",
+    "midiChannelsToListen",
+    "lowestKey"
+  ],
+  "properties": {
+    "strips": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": { "$ref": "./piano-led-strip.schema.json" }
+    },
+    "colorPalette": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "$ref": "#/$defs/LedColor" }
+    },
+    "colorLayout": {
+      "type": "string",
+      "enum": ["VelocityBased", "NoteBased"]
+    },
+    "colorCurve": { "type": "string", "default": "Linear" },
+    "noteOffColor": { "$ref": "#/$defs/LedColor" },
+    "noteOffColorBrightness": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "midiChannelsToListen": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1, "maximum": 16 },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "lowestKey": {
+      "type": "string",
+      "pattern": "^([A-Ga-g][#♯b♭]?)(\\d+)$"
+    }
+  },
+  "$defs": {
+    "LedColor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["r", "g", "b"],
+      "properties": {
+        "r": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "g": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "b": { "type": "integer", "minimum": 0, "maximum": 255 }
+      }
+    }
+  }
+}
